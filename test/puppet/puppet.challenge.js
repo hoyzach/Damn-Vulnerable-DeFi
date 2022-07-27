@@ -151,9 +151,7 @@ describe('[Challenge] Puppet', function () {
 
         await logBalances(attacker.address, "attacker");
         await logBalances(attackUni.address, "uniswap");
-        await logBalances(attackPuppet.address, "pool")
-
-
+        await logBalances(attackPuppet.address, "pool");
     });
 
     after(async function () {

